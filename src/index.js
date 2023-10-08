@@ -1,16 +1,26 @@
-import React, {useEffect, useState} from 'react'
+import React, { useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 // import { createStore } from './store/createStore'
 // import { taskReducer } from './store/taskReducer'
 // import * as actions from './store/actionTypes'
-import { initiateStore } from "./store/store"
-import { taskCompleted, taskDeleted, titleChanged } from "./store/actions"
+import configureStore from './store/store'
+import {
+    completeTask,
+    createTask,
+    getTasks,
+    getTasksLoadingStatus,
+    loadTasks,
+    taskDeleted,
+    titleChanged
+} from './store/task'
+import { Provider, useDispatch, useSelector } from 'react-redux'
+import { getError } from './store/errors'
 // import {compose, pipe} from 'lodash/fp'
 
 
 
 // const store = createStore(taskReducer, initialState)
-const store = initiateStore()
+const store = configureStore()
 const App = () => {
   // function fn(){
   //   return 'App'
@@ -88,34 +98,61 @@ const App = () => {
     // console.log(store.getState())
     // store.dispatch({type:'task/completed', payload: {id: 1}})
 
+    // const [state, setState] = useState(store.getState())
+    const state = useSelector(getTasks())
+    const isLoading = useSelector(getTasksLoadingStatus())
+    const error = useSelector(getError())
+    const dispatch = useDispatch()
+
     useEffect(() => {
-        store.subscribe(() => setState(store.getState()))
+        dispatch(loadTasks())
+        // store.dispatch(set())
+        // store.subscribe(() => setState(store.getState()))
     },[])
 
-    const [state, setState] = useState(store.getState())
-    const completeTask = (taskId) => {
-        store.dispatch(taskCompleted(taskId))
-        // console.log(store.getState())
-    }
+
+    // const completeTask = (taskId) => {
+    //     // store.dispatch(taskCompleted(taskId))
+    //     store.dispatch((getState, dispatch)=>{
+    //         console.log(getState)
+    //         console.log(dispatch)
+    //         store.dispatch(taskCompleted(taskId))
+    //     })
+    //     // console.log(store.getState())
+    // }
     const deleteTask = (taskId) => {
-        store.dispatch(taskDeleted(taskId))
+        dispatch(taskDeleted(taskId))
         // console.log(store.getState())
     }
 
     const changeTitle = (taskId) => {
-        store.dispatch(titleChanged(taskId))
+        dispatch(titleChanged(taskId))
         // console.log(store.getState())
+    }
+    if (isLoading) {
+        return <h1>Loading...</h1>
+    }
+
+    if (error) {
+        return <p>{error}</p>
+    }
+
+    const newTask = {
+        userId:1,
+        title:"a new task added by me",
+        completed: false
     }
 
     return (
         <>
             <h1>App</h1>
+            <button onClick={() => dispatch(createTask(newTask))}>Create </button>
             <ul>
                 {state.map((el) =>
                     (<li key={el.id}>
                         <p>{el.title}</p>
                         <p>{`Completed: ${el.completed}`}</p>
-                        <button onClick={() => completeTask(el.id) }>Complete </button>
+                        <button onClick={() => dispatch(completeTask(el.id))}>Complete </button>
                         <button onClick={() => changeTitle(el.id) }>Change Title </button>
                         <button onClick={() => deleteTask(el.id) }>Delete </button>
                         <hr />
@@ -128,8 +165,10 @@ const App = () => {
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-  <React.StrictMode>
-     <App />
+   <React.StrictMode>
+      <Provider store={store}>
+        <App />
+      </Provider>
   </React.StrictMode>
 );
 
